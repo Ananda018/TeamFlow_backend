@@ -4,8 +4,8 @@ import multer from "multer";
 const storage = multer.diskStorage({
   // Where to store uploaded files
   destination: function (req, file, cb) {
-    cb(null, "./public/temp");  
-    // "./public/temp" is a folder inside your project 
+    cb(null, "./public/temp");
+    // "./public/temp" is a folder inside your project
     // where uploaded files will be saved temporarily
   },
 

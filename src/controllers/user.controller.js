@@ -4,7 +4,6 @@ import { User } from "../models/user.model.js"; // User model (MongoDB schema)
 import { uploadOnCloudinary } from "../utils/cloudnary.js"; // Function to upload files to Cloudinary
 import { ApiResponse } from "../utils/ApiResponse.js"; // Standardized API response format
 import jwt from "jsonwebtoken";
-import mongoose from "mongoose";
 
 const generateAccessTokenAndRefereshTokens = async (userId) => {
   try {
@@ -16,7 +15,7 @@ const generateAccessTokenAndRefereshTokens = async (userId) => {
     await user.save({ validateBeforeSave: false });
 
     return { accessToken, refreshToken };
-  } catch (error) {
+  } catch {
     throw new ApiError(
       500,
       "Something went wrong while generateing refere and access token"
@@ -318,11 +317,6 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "CoverImage Updated Successfully"));
 });
 
-
-
-
-
-
 // Export controller function
 export {
   registerUser,
@@ -334,5 +328,4 @@ export {
   updateAccountDetails,
   updateUserAvatar,
   updateUserCoverImage,
-  
 };

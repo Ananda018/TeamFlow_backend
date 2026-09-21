@@ -11,41 +11,41 @@ const userSchema = new Schema(
     // Username of the user
     username: {
       type: String,
-      required: true,   
-      unique: true,     
-      lowercase: true,  
-      trim: true,       
-      index: true,     
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+      index: true,
     },
     // Email address of the user
     email: {
       type: String,
-      required: true,   
-      unique: true,     
-      lowercase: true,  
-      trim: true,       
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
     },
     // Full name of the user
     fullName: {
       type: String,
-      required: true,   
-      trim: true,       
-      index: true,      
+      required: true,
+      trim: true,
+      index: true,
     },
     // Profile picture (avatar) of the user
     avatar: {
       type: String,
-      required: true,   
+      required: true,
     },
     // Optional cover image
     coverImage: {
       type: String,
     },
-   
+
     // Password for user login (hashed before saving)
     password: {
       type: String,
-      required: [true, "Password is required"], 
+      required: [true, "Password is required"],
     },
     // Refresh token used for authentication
     refreshToken: {
@@ -71,8 +71,8 @@ userSchema.methods.isPasswordCorrect = async function (password) {
 userSchema.methods.generateAccessToken = function () {
   return jwt.sign(
     {
-      _id: this._id,        // User ID
-      email: this.email,    // User email
+      _id: this._id, // User ID
+      email: this.email, // User email
       username: this.username, // Username
       fullName: this.fullName, // Full name
     },

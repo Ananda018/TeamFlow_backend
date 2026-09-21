@@ -1,45 +1,69 @@
-//require("dotenv").config({path: "./.env"});
-
-import dotenv from "dotenv";
-import connectDB from "./db/index.js";
-import { app } from "./app.js";
-
-dotenv.config({ path: "./.env" });
-connectDB()
-  .then(() => {
-    app.on("error", (error) => {
-      console.log("Error:", error);
-    });
-    // Start the server
-    app.listen(process.env.PORT || 8000, () => {
-      console.log(`Server is running on port http://localhost:${process.env.PORT || 8000}`);
-    });
-  })
-  .catch((error) => {
-    console.log("Database connection failed:", error);
-  });
-
-/*
 import mongoose from "mongoose";
-import { DB_NAME } from "./constants";
-import express from "express";
-const app = express();
+import { readEnvironment } from "./config/environment.js";
+import { createRedisClient } from "./config/redis.js";
+import connectDB from "./db/index.js";
+import { createHealthChecks } from "./services/health.service.js";
+import { createApp } from "./app.js";
+import { logger } from "./utils/logger.js";
 
-(async () => {
+let server;
+let redis;
+let shuttingDown = false;
+
+async function shutdown(exitCode = 0) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  const deadline = setTimeout(() => process.exit(1), 5000);
+  deadline.unref();
   try {
-    // Connect to MongoDB
-    await mongoose.connect(`${process.env.MONGODB_URI}/${DB_NAME}`);
-    app.on("error", (error) => {
-      console.log("Error:", error);
-      throw error;
-    });
-    app.listen(process.env.PORT || 3000, () => {
-      console.log(`Server is running on port ${process.env.PORT || 3000}`);
-    });
-
-  } catch (error) {
-    console.log("Error:", error);
-    throw error;
+    if (server) await new Promise((resolve) => server.close(resolve));
+    if (redis?.isOpen) redis.destroy();
+    await mongoose.disconnect();
+    process.exitCode = exitCode;
+    logger.info("server.stopped");
+  } catch {
+    process.exitCode = 1;
+  } finally {
+    clearTimeout(deadline);
   }
-})();
-*/
+}
+
+process.once("SIGINT", () => void shutdown());
+process.once("SIGTERM", () => void shutdown());
+
+async function start() {
+  const config = readEnvironment();
+  redis = createRedisClient(config.redisUrl);
+  await connectDB(config.mongoUri, {
+    legacy: !process.env.MONGO_URI && Boolean(process.env.MONGODB_URI),
+  });
+  if (shuttingDown) {
+    await mongoose.disconnect();
+    return;
+  }
+  await redis.connect();
+  if (shuttingDown) {
+    if (redis.isOpen) redis.destroy();
+    return;
+  }
+  const app = createApp({
+    config,
+    checks: createHealthChecks(mongoose.connection, redis),
+  });
+  server = app.listen(config.port, () =>
+    logger.info("server.started", { port: config.port })
+  );
+  server.on("error", () => {
+    logger.error("server.listen_failed");
+    void shutdown(1);
+  });
+}
+
+try {
+  await start();
+} catch {
+  logger.error("server.startup_failed", {
+    hint: "Check environment configuration and MongoDB/Redis availability",
+  });
+  await shutdown(1);
+}

@@ -1,18 +1,14 @@
 import mongoose from "mongoose";
+import { logger } from "../utils/logger.js";
 import { DB_NAME } from "../constants.js";
 
-
-const connectDB= async () => {
-  try {
-    // Connect to MongoDB
-    const connectionInstance= await mongoose.connect(`${process.env.MONGODB_URI}/${DB_NAME}`);
-    console.log(`Database connected successfully to ${connectionInstance.connection.host}`);
-
-  } catch (error) {
-    console.error("Database connection error:", error);
-    process.exit(1);
-  }};
-
-  
-
-export default connectDB;
+export default async function connectDB(uri, { legacy = false } = {}) {
+  await mongoose.connect(uri, {
+    ...(legacy ? { dbName: DB_NAME } : {}),
+    serverSelectionTimeoutMS: 5000,
+    connectTimeoutMS: 5000,
+    socketTimeoutMS: 5000,
+  });
+  logger.info("database.connected");
+  return mongoose.connection;
+}
