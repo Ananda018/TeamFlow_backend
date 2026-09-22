@@ -21,6 +21,18 @@ If `.env` exists, add missing variables from `.env.example` without overwriting 
 
 The backend loads `.env` relative to this repository, independently of the shell's current directory. It listens on port 8000 by default after both dependencies connect. Failures exit nonzero with redacted logs; SIGINT/SIGTERM close the server and clients.
 
+## Troubleshooting startup
+
+Startup errors include a `stage`, a safe `code`, and a suggested action. Credentials and raw driver messages are not logged.
+
+- `configuration`: correct the named environment variable's format. `MONGODB_URI` remains a supported development alias; renaming it alone will not fix a network failure.
+- `database` / `DATABASE_UNREACHABLE`: check that the database is running and reachable. For Atlas, confirm the cluster is available and your current public IP is in its Network Access list. Check firewall/VPN restrictions.
+- `database` / `TLS_CONNECTION_FAILED`: check Atlas network access and TLS/firewall inspection. Keep TLS certificate verification enabled.
+- `redis` / `ECONNREFUSED`: start Redis or configure `REDIS_URL` for an existing reachable instance. The default is `redis://127.0.0.1:6379`; with Docker installed, run `docker compose up -d redis` here.
+- `http` / `EADDRINUSE`: stop the other process using `PORT` or select another port and update the frontend development proxy.
+
+Both MongoDB and Redis must connect before the API starts. Fixing the first reported connection may reveal a second service failure. Atlas connection guidance: https://www.mongodb.com/docs/atlas/troubleshoot-connection/.
+
 ## Health API
 
 | Method | Path                 | Checks            |

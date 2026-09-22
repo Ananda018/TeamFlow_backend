@@ -188,5 +188,7 @@ test("startup fails cleanly with unavailable infrastructure without printing sec
   });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /server.startup_failed/);
+  assert.match(result.stderr, /"stage":"database"/);
+  assert.match(result.stderr, /ECONNREFUSED|DATABASE_UNREACHABLE/);
   assert.ok(!(result.stdout + result.stderr).includes("private-password"));
 });
